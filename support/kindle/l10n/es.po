@@ -32,3 +32,21 @@ msgstr "Lista de juegos"
 
 msgid "Go back to the game list? You will lose all unsaved progress!"
 msgstr "¿Volver a la lista de juegos? ¡Perderás el progreso que no hayas guardado!"
+
+msgid "Open"
+msgstr "Abrir"
+
+msgid "Restore"
+msgstr "Cargar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Replace"
+msgstr "Reemplazar"
+
+msgid "\"%s\" already exists. Do you want to replace it?"
+msgstr "«%s» ya existe. ¿Quieres reemplazarlo?"
+
+msgid "This folder is empty"
+msgstr "Esta carpeta está vacía"
