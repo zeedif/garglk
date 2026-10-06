@@ -1,0 +1,19 @@
+# Spanish translation of the Kindle user interface of Gargoyle.
+msgid ""
+msgstr ""
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Are you sure you want to quit? You will lose all unsaved progress!"
+msgstr "¿Seguro que quieres salir? ¡Perderás el progreso que no hayas guardado!"
