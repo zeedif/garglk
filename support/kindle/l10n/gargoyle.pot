@@ -47,3 +47,11 @@ msgstr ""
 
 msgid "This folder is empty"
 msgstr ""
+
+msgid "Download games"
+msgstr ""
+
+msgid ""
+"The game downloader needs kTerm.\n"
+"Install it with ;kpm install kterm"
+msgstr ""
