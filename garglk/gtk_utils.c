@@ -149,6 +149,8 @@ GtkWidget * createAndInitKindleFileRequestor(
         const GtkSortType directoryListSortOrder,
         const GtkSortType filenameListSortOrder)
 {
+    char *env;
+
     if ((env = getenv("GARGOYLE_FULLSCREEN")) != NULL)
         gli_conf_fullscreen = atoi(env);
 
