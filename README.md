@@ -5,6 +5,7 @@ https://www.mobileread.com/forums/showthread.php?t=366347
 
 Changes to upstream gargoyle (https://github.com/garglk/garglk):
 * Kindle port based on patches from: http://www.fabiszewski.net/kindle-gargoyle/
+* Kindle style interface: flat buttons and bordered dialogs drawn with cairo. It is translatable: catalogs are in support/kindle/l10n, copy gargoyle.pot to `<language>.po` to add a language
 * Supported in-game touch screen gestures:
  * One finger single tap on input line: place cursor
  * One finger double tap on word in input line: place cursor after tapped word
