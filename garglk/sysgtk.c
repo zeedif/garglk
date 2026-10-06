@@ -508,6 +508,45 @@ quit_confirmation (GtkWidget *widget, gpointer user_data)
 #endif
 }
 
+#ifdef _KINDLE
+static int winheight(void)
+{
+    gint screen_height = gdk_screen_get_height(gdk_screen_get_default());
+
+    if (gli_conf_fullscreen)
+        return screen_height;
+    return screen_height - screen_height / KBFACTOR;
+}
+
+static void winfitkeyboard(void)
+{
+    GdkGeometry geom;
+
+    geom.min_width = geom.max_width = gdk_screen_get_width(gdk_screen_get_default());
+    geom.min_height = geom.max_height = winheight();
+
+    gtk_window_set_geometry_hints(GTK_WINDOW(frame), GTK_WIDGET(frame), &geom,
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+    gtk_window_resize(GTK_WINDOW(frame), geom.min_width, geom.min_height);
+}
+
+/* A hidden keyboard leaves its area to the game, as in full screen mode */
+static void wintogglekeyboard(void)
+{
+    gli_conf_fullscreen = !gli_conf_fullscreen;
+
+    /* games opened later from the game list keep the choice */
+    setenv("GARGOYLE_FULLSCREEN", gli_conf_fullscreen ? "1" : "0", TRUE);
+
+    if (gli_conf_fullscreen)
+        closeVirtualKeyboard();
+    else
+        openVirtualKeyboard(NULL, NULL);
+
+    winfitkeyboard();
+}
+#endif
+
 #ifdef _ALT_MOUSE_HANDLING
 static void onbuttondown(GtkWidget *widget, GdkEventButton *event, void *data)
 {
@@ -549,11 +588,12 @@ static void onbuttondown(GtkWidget *widget, GdkEventButton *event, void *data)
                 //quit_confirmation(widget,data);
                 
             }
-            else if ((event->y - y0) >= y1 - yOneThirdOfWinHeight) {    //bottom right -> display keyboard OR quit
-                if (gli_conf_fullscreen)
-                    quit_confirmation(widget, frame);
-                else
-                    openVirtualKeyboard(widget,data);
+            else if ((event->y - y0) >= y1 - yOneThirdOfWinHeight) {    //bottom right -> show/hide keyboard
+#ifdef _KINDLE
+                wintogglekeyboard();
+#else
+                openVirtualKeyboard(widget,data);
+#endif
             }
             else 
             {                                                           // center right -> delete next word
@@ -804,9 +844,85 @@ void wininit(int *argc, char **argv)
 }
 
 #ifdef _KINDLE
+static GtkWidget *headertitle = NULL;
+static GtkWidget *menubutton = NULL;
+
+/* Glk offers no way to ask a game to save or restore, so the standard
+ * commands are typed for it on a cleared input line */
+static void wintypecommand(const char *command)
+{
+    const char *c;
+
+    gli_input_handle_key(keycode_Escape);
+    for (c = command; *c; c++)
+        gli_input_handle_key(*c);
+    gli_input_handle_key(keycode_Return);
+}
+
+static void winreturntolist(void)
+{
+    char exepath[MaxBuffer] = {0};
+
+    if (!kindleDialogRun(GTK_WINDOW(frame),
+                         kindleTr("Go back to the game list? You will lose all unsaved progress!"),
+                         kindleTr("Cancel"), kindleTr("Game list")))
+        return;
+
+    /* the launcher sits next to the interpreters and shows the list when started without a game */
+    if (readlink("/proc/self/exe", exepath, sizeof exepath - 1) > 0)
+    {
+        char *directory = g_path_get_dirname(exepath);
+        char *launcher = g_build_filename(directory, "gargoyle", NULL);
+
+        closeLipcInstance();
+        execl(launcher, launcher, (char *)NULL);
+        g_free(launcher);
+        g_free(directory);
+    }
+}
+
+static void onkeyboardbutton(gpointer data)
+{
+    wintogglekeyboard();
+}
+
+static void onmenubutton(gpointer data)
+{
+    const char *items[] = {
+        kindleTr("Save game"),
+        kindleTr("Restore game"),
+        kindleTr("Game list"),
+        kindleTr("Quit"),
+    };
+
+    switch (kindleMenuRun(GTK_WINDOW(frame), menubutton, GTK_WIDGET(data)->allocation.height, items, G_N_ELEMENTS(items)))
+    {
+        case 0: wintypecommand("save"); break;
+        case 1: wintypecommand("restore"); break;
+        case 2: winreturntolist(); break;
+        case 3: quit_confirmation(NULL, frame); break;
+    }
+}
+
+static GtkWidget *winheaderbar(void)
+{
+    GtkWidget *hbox = gtk_hbox_new(FALSE, kindleUnit() / 2);
+    GtkWidget *bar = kindleBarNew(hbox, FALSE);
+
+    headertitle = kindleLabelNew("", 0.9, TRUE);
+    gtk_label_set_ellipsize(GTK_LABEL(headertitle), PANGO_ELLIPSIZE_END);
+
+    gtk_box_pack_start(GTK_BOX(hbox), headertitle, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), kindleButtonNew(NULL, KINDLE_ICON_KEYBOARD, FALSE, onkeyboardbutton, NULL), FALSE, FALSE, 0);
+    menubutton = kindleButtonNew(NULL, KINDLE_ICON_MENU, FALSE, onmenubutton, bar);
+    gtk_box_pack_start(GTK_BOX(hbox), menubutton, FALSE, FALSE, 0);
+    return bar;
+}
+
 void winopen(void)
 {
     GdkGeometry geom;
+    GtkWidget *vbox;
     char *env;
     GdkScreen *screen = gdk_screen_get_default();
     gint screen_height = gdk_screen_get_height(screen);
@@ -815,9 +931,7 @@ void winopen(void)
     if ((env = getenv("GARGOYLE_FULLSCREEN")) != NULL)
         gli_conf_fullscreen = atoi(env);
 
-    int win_height = screen_height;
-    if (!gli_conf_fullscreen)
-        win_height -= screen_height / KBFACTOR;
+    int win_height = winheight();
 
     geom.min_width  = screen_width;
     geom.min_height = win_height;
@@ -849,16 +963,19 @@ void winopen(void)
     gtk_signal_connect(GTK_OBJECT(frame), "motion_notify_event",
         GTK_SIGNAL_FUNC(onmotion), NULL);
 
-    if (!gli_conf_fullscreen)
-        gtk_signal_connect_after(GTK_OBJECT(frame), "focus_in_event",
-                           GTK_SIGNAL_FUNC(openVirtualKeyboard), NULL);
+    gtk_signal_connect_after(GTK_OBJECT(frame), "focus_in_event",
+                       GTK_SIGNAL_FUNC(openVirtualKeyboard), NULL);
 
     canvas = gtk_drawing_area_new();
     gtk_signal_connect(GTK_OBJECT(canvas), "size_allocate",
                        GTK_SIGNAL_FUNC(onresize), NULL);
     gtk_signal_connect(GTK_OBJECT(canvas), "expose_event",
                        GTK_SIGNAL_FUNC(onexpose), NULL);
-    gtk_container_add(GTK_CONTAINER(frame), canvas);
+
+    vbox = gtk_vbox_new(FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), winheaderbar(), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), canvas, TRUE, TRUE, 0);
+    gtk_container_add(GTK_CONTAINER(frame), vbox);
 
     imcontext = gtk_im_multicontext_new();
     g_signal_connect(imcontext, "commit",
@@ -872,9 +989,10 @@ void winopen(void)
         );
     gtk_window_set_default_size(GTK_WINDOW(frame), screen_width, win_height);
 
-    gtk_widget_show(canvas);
+    gtk_widget_show_all(vbox);
     gtk_widget_show(frame);
 
+    gtk_im_context_set_client_window(imcontext, frame->window);
     gtk_widget_grab_focus(frame);
 }
 
@@ -962,6 +1080,16 @@ void winopen(void)
 void wintitle(void)
 {
     gtk_window_set_title(GTK_WINDOW(frame), KDIALOG);
+
+    if (headertitle)
+    {
+        char *title = g_strdup(strlen(gli_story_title) ? gli_story_title : gli_story_name);
+
+        if (!strlen(gli_story_title) && strrchr(title, '.'))
+            *strrchr(title, '.') = 0;
+        gtk_label_set_text(GTK_LABEL(headertitle), title);
+        g_free(title);
+    }
 }
 
 #else /* Default implementation */
