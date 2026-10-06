@@ -95,8 +95,9 @@ if(WITH_ALAN3)
   terp(alan3
        SRCS alan3/alan.version.c alan3/act.c alan3/actor.c alan3/args.c
        alan3/arun.c alan3/attribute.c alan3/checkentry.c alan3/class.c
-       alan3/current.c alan3/debug.c alan3/decode.c alan3/dictionary.c
-       alan3/event.c alan3/exe.c alan3/fnmatch.c alan3/glkio.c alan3/glkstart.c
+       alan3/converter.c alan3/current.c alan3/debug.c alan3/decode.c
+       alan3/dictionary.c alan3/event.c alan3/exe.c alan3/fnmatch.c
+       alan3/glkio.c alan3/glkstart.c
        alan3/instance.c alan3/inter.c alan3/lists.c alan3/literal.c alan3/main.c
        alan3/memory.c alan3/msg.c alan3/options.c alan3/output.c alan3/params.c
        alan3/parse.c alan3/readline.c alan3/reverse.c alan3/rules.c alan3/save.c
