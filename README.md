@@ -34,6 +34,12 @@ The Kindle build targets firmware 5.16.3 and later. It needs the `kindlehf` tool
 
 The binaries are installed into `build-kindlehf/dist`.
 
+## Installing on Kindle
+
+`support/kindle/package.sh` turns the build into `gargoyle-kindlehf.zip` and a KPM package (`.kpkg`).
+
+Extract the zip at the root of the Kindle storage. `gargoyle/` holds the program together with the `games` and `saved_games` folders, and `documents/Gargoyle.sh` adds Gargoyle to the library. The `gargoyle` folder can also be placed in `extensions/` to start it from KUAL.
+
 # Gargoyle [![Build Status](https://travis-ci.org/garglk/garglk.svg?branch=master)](https://travis-ci.org/garglk/garglk)
 
 ## An interactive fiction player
