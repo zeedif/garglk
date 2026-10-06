@@ -17,22 +17,25 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA *
  *                                                                            *
  *****************************************************************************/
-#define _KINDLE
-/* 
- * File:   gtk_utils.h
- */
 
-#ifndef GTK_UTILS_H
-#define GTK_UTILS_H
+#ifndef KINDLE_BROWSER_H
+#define KINDLE_BROWSER_H
 
-#include <stdbool.h>
-#include <gtk/gtk.h>
+#include "kindle_ui.h"
 
-#ifdef _KINDLE
-void closeLipcInstance();
-void openVirtualKeyboard(GtkWidget * widget, gpointer * callback_data);
-void closeVirtualKeyboard(void);
+typedef enum
+{
+    KINDLE_BROWSE_GAME,
+    KINDLE_BROWSE_RESTORE,
+    KINDLE_BROWSE_SAVE,
+} KindleBrowseMode;
 
-#endif /* _KINDLE */
+/* Full screen file browser: one paged list with folders first, the path next
+ * to an up button, and the selection framed. Returns TRUE and the chosen path
+ * in buffer when the user accepts. extraLabel and extra add a button to the
+ * left of the footer; the folder is listed again after extra returns. */
+gboolean kindleBrowse(KindleBrowseMode mode, const char * directory, const char * suggestedName,
+                      const char * extraLabel, KindleCallback extra, gpointer extraData,
+                      char * buffer, int bufferSize);
 
-#endif /* GTK_UTILS_H */
+#endif /* KINDLE_BROWSER_H */
