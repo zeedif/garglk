@@ -1,0 +1,4 @@
+[submodule "ifdb-dl"]
+	path = ifdb-dl
+	url = https://github.com/zeedif/ifdb-dl.git
+	branch = kindle

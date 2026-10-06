@@ -54,6 +54,43 @@ bool garglk::winterp(const std::string &exe, const std::vector<std::string> &fla
     return false;
 }
 
+// ifdb-dl is interactive, so it runs in kTerm and saves the games into $GAMES.
+static void download_games()
+{
+    auto downloader = garglk::winappdir().value_or(".") + "/ifdb-dl";
+
+    if (access(downloader.c_str(), X_OK) != 0) {
+        garglk::winmsg("Could not start " + downloader);
+        return;
+    }
+
+    for (const std::string dir : {"/mnt/us/extensions/kterm", "/mnt/us/kterm"}) {
+        auto kterm = dir + "/bin/kterm";
+        if (access(kterm.c_str(), X_OK) != 0) {
+            continue;
+        }
+
+        auto layout = dir + "/layouts/" + (gdk_screen_get_width(gdk_screen_get_default()) >= 1000 ? "keyboard-300dpi.xml" : "keyboard.xml");
+        std::vector<std::string> args = {kterm, "-e", downloader, "-k", "1", "-o", "U", "-s", "7"};
+        if (access(layout.c_str(), R_OK) == 0) {
+            args.insert(args.end(), {"-l", layout});
+        }
+
+        std::vector<char *> argv;
+        for (auto &arg : args) {
+            argv.push_back(arg.data());
+        }
+        argv.push_back(nullptr);
+
+        g_setenv("TERM", "xterm", true);
+        g_setenv("TERMINFO", (dir + "/vte/terminfo").c_str(), true);
+        g_spawn_sync(nullptr, argv.data(), nullptr, GSpawnFlags(0), nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
+        return;
+    }
+
+    garglk::winmsg(kindle::tr("The game downloader needs kTerm.\nInstall it with ;kpm install kterm"));
+}
+
 // The platform named on the icon of a game in the game list.
 static std::optional<std::string> platform(const std::string &path)
 {
@@ -106,7 +143,8 @@ int main(int argc, char **argv)
 
     // rungame only returns when the game could not be started.
     const char *games = std::getenv("GAMES");
-    while (auto game = kindle::browse(kindle::Browse::Game, games != nullptr ? games : g_get_home_dir(), "", std::nullopt, platform)) {
+    kindle::Action download{kindle::tr("Download games"), download_games};
+    while (auto game = kindle::browse(kindle::Browse::Game, games != nullptr ? games : g_get_home_dir(), "", download, platform)) {
         garglk::rungame(*game);
     }
 

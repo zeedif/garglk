@@ -72,3 +72,9 @@ cmake -S "${TOP}" -B "${BUILD}/garglk" -G Ninja \
     -DWITH_BUNDLED_FMT=ON
 cmake --build "${BUILD}/garglk"
 cmake --install "${BUILD}/garglk"
+
+# The game downloader of the game list.
+if command -v go >/dev/null 2>&1 && [ -f "${TOP}/ifdb-dl/main.go" ]; then
+    (cd "${TOP}/ifdb-dl" && CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 \
+        go build -trimpath -ldflags="-s -w" -o "${TOP}/build/dist/ifdb-dl" .)
+fi
