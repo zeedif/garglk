@@ -46,6 +46,11 @@
 
 #include "gtk_utils.h"
 
+#ifdef _KINDLE
+#include "kindle_l10n.h"
+#include "kindle_ui.h"
+#endif
+
 static GtkWidget *frame;
 static GtkWidget *canvas;
 static GdkCursor *gdk_hand;
@@ -471,6 +476,12 @@ static void onexpose(GtkWidget *widget, GdkEventExpose *event, void *data)
 static void
 quit_confirmation (GtkWidget *widget, gpointer user_data)
 {
+#ifdef _KINDLE
+    if (kindleDialogRun(GTK_WINDOW(user_data),
+                        kindleTr("Are you sure you want to quit? You will lose all unsaved progress!"),
+                        kindleTr("Cancel"), kindleTr("Quit")))
+        winexit();
+#else
     GtkWidget *dialog;
     gint response;
     GtkWindow *parent = GTK_WINDOW(user_data);
@@ -494,6 +505,7 @@ quit_confirmation (GtkWidget *widget, gpointer user_data)
         /* If No (or close), just destroy dialog */
         gtk_widget_destroy(dialog);
     }
+#endif
 }
 
 #ifdef _ALT_MOUSE_HANDLING

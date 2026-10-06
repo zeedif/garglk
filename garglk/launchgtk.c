@@ -31,6 +31,11 @@
 #include <gtk/gtk.h>
 #include "gtk_utils.h"
 
+#ifdef _KINDLE
+#include "kindle_l10n.h"
+#include "kindle_ui.h"
+#endif
+
 #ifdef __FreeBSD__
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -79,6 +84,9 @@ static void winstart(void)
 
 void winmsg(const char * msg)
 {
+#ifdef _KINDLE
+    kindleDialogRun(NULL, msg, NULL, kindleTr("Close"));
+#else
     GtkWidget * msgDlg = gtk_message_dialog_new(NULL,
                                          GTK_DIALOG_MODAL,
                                          GTK_MESSAGE_ERROR,
@@ -86,13 +94,10 @@ void winmsg(const char * msg)
                                          "%s", msg
     );
 
-#ifdef _KINDLE
-    gtk_window_set_title(GTK_WINDOW(msgDlg), KDIALOG);
-#else
     gtk_window_set_title(GTK_WINDOW(msgDlg), AppName);
-#endif
     gtk_dialog_run(GTK_DIALOG(msgDlg ));
     gtk_widget_destroy(msgDlg);
+#endif
 }
 
 int winargs(int argc, char **argv, char *buffer)
