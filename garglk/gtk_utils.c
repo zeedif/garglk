@@ -144,6 +144,23 @@ void openVirtualKeyboard(GtkWidget * widget, gpointer * callback_data) {
     }
 }
 
+void toggleVirtualKeyboard(void) {
+    int isKeyboardVisible = 0;
+
+    if (lipcInstance == 0) {
+        openLipcInstance();
+    }
+    LipcGetIntProperty(lipcInstance, "com.lab126.keyboard", "show", &isKeyboardVisible);
+
+    if (isKeyboardVisible) {
+        /* lipc-set-prop -s com.lab126.keyboard close net.fabiszewski.gargoyle */
+        LipcSetStringProperty(lipcInstance, "com.lab126.keyboard", "close", "net.fabiszewski.gargoyle");
+    }
+    else {
+        LipcSetStringProperty(lipcInstance, "com.lab126.keyboard", "open", "net.fabiszewski.gargoyle:abc:0");
+    }
+}
+
 GtkWidget * createAndInitKindleFileRequestor(
         const GString * initFilename,
         const GtkSortType directoryListSortOrder,

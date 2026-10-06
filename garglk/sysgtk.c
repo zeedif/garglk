@@ -46,6 +46,12 @@
 
 #include "gtk_utils.h"
 
+#ifdef _KINDLE
+#include "kindle_l10n.h"
+#else
+#define kindleTr(msgid) (msgid)
+#endif
+
 static GtkWidget *frame;
 static GtkWidget *canvas;
 static GdkCursor *gdk_hand;
@@ -479,8 +485,13 @@ quit_confirmation (GtkWidget *widget, gpointer user_data)
     dialog = gtk_message_dialog_new(parent,
                                     GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
                                     GTK_MESSAGE_QUESTION,
-                                    GTK_BUTTONS_YES_NO,
-                                    "Are you sure you want to quit? You will lose all unsaved progress!");
+                                    GTK_BUTTONS_NONE,
+                                    "%s",
+                                    kindleTr("Are you sure you want to quit? You will lose all unsaved progress!"));
+    gtk_dialog_add_buttons(GTK_DIALOG(dialog),
+                           kindleTr("Cancel"), GTK_RESPONSE_NO,
+                           kindleTr("Quit"), GTK_RESPONSE_YES,
+                           NULL);
     gtk_window_set_title(GTK_WINDOW(dialog), KDIALOG);
 
     /* Run the dialog and store the user response */
@@ -792,9 +803,50 @@ void wininit(int *argc, char **argv)
 }
 
 #ifdef _KINDLE
+static void onkeyboardbutton(GtkWidget *widget, void *data)
+{
+    toggleVirtualKeyboard();
+}
+
+static void onquitbutton(GtkWidget *widget, void *data)
+{
+    quit_confirmation(widget, frame);
+}
+
+static GtkWidget *wintoolbutton(const char *label, int width, int height, GtkSignalFunc callback)
+{
+    GtkWidget *button = gtk_button_new_with_label(label);
+
+    /* keep the keyboard focus on the game window */
+    GTK_WIDGET_UNSET_FLAGS(button, GTK_CAN_FOCUS);
+    gtk_widget_set_size_request(button, width, height);
+    gtk_signal_connect(GTK_OBJECT(button), "clicked", callback, NULL);
+
+    return button;
+}
+
+static GtkWidget *wintoolbar(int screen_width, int screen_height)
+{
+    GtkWidget *toolbar = gtk_hbox_new(FALSE, 0);
+    int width = screen_width / 5;
+    int height = screen_height / 20;
+
+    gtk_box_pack_end(GTK_BOX(toolbar),
+        wintoolbutton(kindleTr("Quit"), width, height, GTK_SIGNAL_FUNC(onquitbutton)),
+        FALSE, FALSE, 0);
+
+    if (!gli_conf_fullscreen)
+        gtk_box_pack_end(GTK_BOX(toolbar),
+            wintoolbutton(kindleTr("Keyboard"), width, height, GTK_SIGNAL_FUNC(onkeyboardbutton)),
+            FALSE, FALSE, 0);
+
+    return toolbar;
+}
+
 void winopen(void)
 {
     GdkGeometry geom;
+    GtkWidget *vbox;
     char *env;
     GdkScreen *screen = gdk_screen_get_default();
     gint screen_height = gdk_screen_get_height(screen);
@@ -846,7 +898,11 @@ void winopen(void)
                        GTK_SIGNAL_FUNC(onresize), NULL);
     gtk_signal_connect(GTK_OBJECT(canvas), "expose_event",
                        GTK_SIGNAL_FUNC(onexpose), NULL);
-    gtk_container_add(GTK_CONTAINER(frame), canvas);
+
+    vbox = gtk_vbox_new(FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), wintoolbar(screen_width, screen_height), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), canvas, TRUE, TRUE, 0);
+    gtk_container_add(GTK_CONTAINER(frame), vbox);
 
     imcontext = gtk_im_multicontext_new();
     g_signal_connect(imcontext, "commit",
@@ -860,9 +916,10 @@ void winopen(void)
         );
     gtk_window_set_default_size(GTK_WINDOW(frame), screen_width, win_height);
 
-    gtk_widget_show(canvas);
+    gtk_widget_show_all(vbox);
     gtk_widget_show(frame);
 
+    gtk_im_context_set_client_window(imcontext, frame->window);
     gtk_widget_grab_focus(frame);
 }
 

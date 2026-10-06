@@ -67,6 +67,7 @@ GString * createAndInitFilenameFromOsEnvironmentVariable(
 
 void closeLipcInstance();
 void openVirtualKeyboard(GtkWidget * widget, gpointer * callback_data);
+void toggleVirtualKeyboard(void);
 
 /*
  * Creates a GtkFileSelection and sizes it for semi-fullscreen mode on K*ndle,
