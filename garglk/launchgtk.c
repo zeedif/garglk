@@ -166,11 +166,64 @@ static void winfilterfiles(GtkFileChooser *dialog)
 }
 
 #ifdef _KINDLE
+static const char * ktermDirectories[] = { "/mnt/us/extensions/kterm", "/mnt/us/kterm" };
+
+/* ifdb-dl is interactive, so it runs in kTerm and saves the games into $GAMES */
+static void windownloadgames(gpointer data)
+{
+    gchar * downloader = g_build_filename(dir, "ifdb-dl", NULL);
+    gchar * kterm = NULL;
+    gchar * ktermDirectory = NULL;
+    size_t i;
+
+    for (i = 0; i < G_N_ELEMENTS(ktermDirectories) && kterm == NULL; i++)
+    {
+        gchar * candidate = g_build_filename(ktermDirectories[i], "bin", "kterm", NULL);
+        if (g_file_test(candidate, G_FILE_TEST_IS_EXECUTABLE))
+        {
+            kterm = candidate;
+            ktermDirectory = g_strdup(ktermDirectories[i]);
+        }
+        else
+        {
+            g_free(candidate);
+        }
+    }
+
+    if (kterm == NULL || !g_file_test(downloader, G_FILE_TEST_IS_EXECUTABLE))
+    {
+        winmsg(kindleTr("The game downloader needs kTerm.\nInstall it with ;kpm install kterm"));
+    }
+    else
+    {
+        gchar * terminfo = g_build_filename(ktermDirectory, "vte", "terminfo", NULL);
+        gchar * layout = g_build_filename(ktermDirectory, "layouts",
+                gdk_screen_get_width(gdk_screen_get_default()) >= 1000 ? "keyboard-300dpi.xml" : "keyboard.xml",
+                NULL);
+        gchar * argv[] = { kterm, "-e", downloader, "-k", "1", "-o", "U", "-s", "7", "-l", layout, NULL };
+
+        if (!g_file_test(layout, G_FILE_TEST_EXISTS))
+            argv[9] = NULL;
+
+        g_setenv("TERM", "xterm", TRUE);
+        g_setenv("TERMINFO", terminfo, TRUE);
+        g_spawn_sync(NULL, argv, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL);
+
+        g_free(layout);
+        g_free(terminfo);
+    }
+
+    g_free(ktermDirectory);
+    g_free(kterm);
+    g_free(downloader);
+}
+
 static void winbrowsefile(char *buffer, int bufferSize)
 {
     const char * games = getenv("GAMES") ? getenv("GAMES") : getenv("HOME");
 
-    if (!kindleBrowse(KINDLE_BROWSE_GAME, games, NULL, NULL, NULL, NULL, buffer, bufferSize))
+    if (!kindleBrowse(KINDLE_BROWSE_GAME, games, NULL, kindleTr("Download games"), windownloadgames, NULL,
+                      buffer, bufferSize))
         buffer[0] = '\0';
 }
 
