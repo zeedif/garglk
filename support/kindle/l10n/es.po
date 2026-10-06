@@ -17,3 +17,18 @@ msgstr "Salir"
 
 msgid "Are you sure you want to quit? You will lose all unsaved progress!"
 msgstr "¿Seguro que quieres salir? ¡Perderás el progreso que no hayas guardado!"
+
+msgid "Games"
+msgstr "Juegos"
+
+msgid "Save game"
+msgstr "Guardar partida"
+
+msgid "Restore game"
+msgstr "Cargar partida"
+
+msgid "Game list"
+msgstr "Lista de juegos"
+
+msgid "Go back to the game list? You will lose all unsaved progress!"
+msgstr "¿Volver a la lista de juegos? ¡Perderás el progreso que no hayas guardado!"

@@ -17,3 +17,18 @@ msgstr ""
 
 msgid "Are you sure you want to quit? You will lose all unsaved progress!"
 msgstr ""
+
+msgid "Games"
+msgstr ""
+
+msgid "Save game"
+msgstr ""
+
+msgid "Restore game"
+msgstr ""
+
+msgid "Game list"
+msgstr ""
+
+msgid "Go back to the game list? You will lose all unsaved progress!"
+msgstr ""
