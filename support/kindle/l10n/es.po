@@ -17,3 +17,13 @@ msgstr "Cancelar"
 
 msgid "Are you sure you want to quit? You will lose all unsaved progress!"
 msgstr "¿Seguro que quieres salir? ¡Perderás el progreso que no hayas guardado!"
+
+msgid "Download games"
+msgstr "Descargar juegos"
+
+msgid ""
+"The game downloader needs kTerm.\n"
+"Install it with ;kpm install kterm"
+msgstr ""
+"El descargador de juegos necesita kTerm.\n"
+"Instálalo con ;kpm install kterm"

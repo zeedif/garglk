@@ -8,6 +8,7 @@ Changes to upstream gargoyle (https://github.com/garglk/garglk):
 * Toolbar on top of the game window:
  * Keyboard: show or hide the on-screen keyboard; while it is hidden the game uses the whole screen, which suits external keyboards
  * Quit: leave the game after a confirmation
+* Download games button in the game list: searches and downloads games from [IFDB](https://ifdb.org) with [ifdb-dl](https://github.com/dfghjkjhgr/ifdb-dl), which runs in [kTerm](https://github.com/bfabiszewski/kterm)
 * The Kindle interface is translatable: catalogs are in support/kindle/l10n, copy gargoyle.pot to `<language>.po` to add a language
 * Supported in-game touch screen gestures:
  * One finger single tap on input line: place cursor

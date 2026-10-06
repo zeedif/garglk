@@ -17,3 +17,11 @@ msgstr ""
 
 msgid "Are you sure you want to quit? You will lose all unsaved progress!"
 msgstr ""
+
+msgid "Download games"
+msgstr ""
+
+msgid ""
+"The game downloader needs kTerm.\n"
+"Install it with ;kpm install kterm"
+msgstr ""
