@@ -114,6 +114,80 @@ int runblorb(char *path, char *game)
     return FALSE;
 }
 
+static int readheader(const char *game, unsigned char *header, size_t len)
+{
+    FILE *f = fopen(game, "rb");
+    size_t n;
+
+    memset(header, 0, len);
+
+    if (!f)
+        return 0;
+
+    n = fread(header, 1, len, f);
+    fclose(f);
+
+    return n;
+}
+
+static int isdigits(const unsigned char *s, int n)
+{
+    while (n--)
+        if (!isdigit(*s++))
+            return FALSE;
+    return TRUE;
+}
+
+/* Identify the story format from its header, as upstream does, so that
+ * games with a shared or wrong extension reach the right interpreter
+ * (Infocom releases are commonly distributed as .dat, like AdvSys). */
+static const char *probeterp(const unsigned char *h, size_t len, const char **terpflags)
+{
+    *terpflags = "";
+
+    if (len >= 24 && h[0] >= 1 && h[0] <= 8 && isdigits(h + 18, 6))
+        return h[0] <= 2 ? T_ZOLD : h[0] == 6 ? T_ZSIX : T_ZCODE;
+
+    if (!memcmp(h, "TADS2 bin\x0a\x0d\x1a", 12))
+        return T_TADS2;
+
+    if (!memcmp(h, "T3-image\x0d\x0a\x1a", 11) && (h[11] == 1 || h[11] == 2) && h[12] == 0)
+        return T_TADS3;
+
+    if (!memcmp(h, "Glul", 4))
+        return T_GLULX;
+
+    if (!memcmp(h, "MaSc", 4) && !memcmp(h + 8, "\x00\x00\x00\x2a\x00", 5) && h[13] <= 4)
+        return T_MGSR;
+
+    if (!memcmp(h, "\x3c\x42\x3f\xc9\x6a\x87\xc2\xcf", 8) && (h[8] == 0x93 || h[8] == 0x94) && h[9] == 0x45)
+        return T_ADRIFT;
+
+    if (!memcmp(h, "\x58\xc7\xc1\x51", 4))
+    {
+        *terpflags = "-gl";
+        return T_AGT;
+    }
+
+    if (!memcmp(h + 2, "\xa0\x9d\x8b\x8e\x88\x8e", 6))
+        return T_ADVSYS;
+
+    if (memchr("\x16\x18\x19\x1e\x1f", h[0], 5) && isdigits(h + 3, 2) && h[5] == '-'
+            && isdigits(h + 6, 2) && h[8] == '-' && isdigits(h + 9, 2))
+        return T_HUGO;
+
+    if (len >= 25 && !memcmp(h + 3, "\x9b\x36\x21", 3) && h[24] == 0xff)
+        return T_LEV9;
+
+    if (h[0] == 2 && ((h[1] == 7 && h[2] == 5) || (h[1] == 8 && (h[2] == 1 || h[2] == 2 || h[2] == 3 || h[2] == 7))))
+        return T_ALAN2;
+
+    if (!memcmp(h, "ALAN\x03", 5))
+        return T_ALAN3;
+
+    return NULL;
+}
+
 static int findterp(char *file, char *target)
 {
     FILE *f;
@@ -320,8 +394,19 @@ int rungame(char *path, char *game)
     if (strlen(terp))
         return winterp(path, strcat(exe,terp), flags, game);
 
+    unsigned char header[32];
+    size_t headerlen = readheader(game, header, sizeof header);
+    const char *probedflags;
+    const char *probed = probeterp(header, headerlen, &probedflags);
+
+    if (!memcmp(header, "FORM", 4) && !memcmp(header + 8, "IFRS", 4))
+        return runblorb(path, game);
+
+    if (probed)
+        return winterp(path, strcat(exe, probed), (char *)probedflags, game);
+
     if (!strcasecmp(ext, "dat"))
-        return winterp(path, strcat(exe,T_ADVSYS), "", game);
+        return winterp(path, strcat(exe,T_SCOTT), "", game);
 
     if (!strcasecmp(ext, "d$$"))
         return winterp(path, strcat(exe,T_AGT), "-gl", game);
