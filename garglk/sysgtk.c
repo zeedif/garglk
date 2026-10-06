@@ -507,6 +507,45 @@ quit_confirmation (GtkWidget *widget, gpointer user_data)
     }
 }
 
+#ifdef _KINDLE
+static int winheight(void)
+{
+    gint screen_height = gdk_screen_get_height(gdk_screen_get_default());
+
+    if (gli_conf_fullscreen)
+        return screen_height;
+    return screen_height - screen_height / KBFACTOR;
+}
+
+static void winfitkeyboard(void)
+{
+    GdkGeometry geom;
+
+    geom.min_width = geom.max_width = gdk_screen_get_width(gdk_screen_get_default());
+    geom.min_height = geom.max_height = winheight();
+
+    gtk_window_set_geometry_hints(GTK_WINDOW(frame), GTK_WIDGET(frame), &geom,
+                                  GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
+    gtk_window_resize(GTK_WINDOW(frame), geom.min_width, geom.min_height);
+}
+
+/* A hidden keyboard leaves its area to the game, as in full screen mode */
+static void wintogglekeyboard(void)
+{
+    gli_conf_fullscreen = !gli_conf_fullscreen;
+
+    /* file requestors read the mode from the environment */
+    setenv("GARGOYLE_FULLSCREEN", gli_conf_fullscreen ? "1" : "0", TRUE);
+
+    if (gli_conf_fullscreen)
+        closeVirtualKeyboard();
+    else
+        openVirtualKeyboard(NULL, NULL);
+
+    winfitkeyboard();
+}
+#endif
+
 #ifdef _ALT_MOUSE_HANDLING
 static void onbuttondown(GtkWidget *widget, GdkEventButton *event, void *data)
 {
@@ -548,11 +587,12 @@ static void onbuttondown(GtkWidget *widget, GdkEventButton *event, void *data)
                 //quit_confirmation(widget,data);
                 
             }
-            else if ((event->y - y0) >= y1 - yOneThirdOfWinHeight) {    //bottom right -> display keyboard OR quit
-                if (gli_conf_fullscreen)
-                    quit_confirmation(widget, frame);
-                else
-                    openVirtualKeyboard(widget,data);
+            else if ((event->y - y0) >= y1 - yOneThirdOfWinHeight) {    //bottom right -> show/hide keyboard
+#ifdef _KINDLE
+                wintogglekeyboard();
+#else
+                openVirtualKeyboard(widget,data);
+#endif
             }
             else 
             {                                                           // center right -> delete next word
@@ -805,7 +845,7 @@ void wininit(int *argc, char **argv)
 #ifdef _KINDLE
 static void onkeyboardbutton(GtkWidget *widget, void *data)
 {
-    toggleVirtualKeyboard();
+    wintogglekeyboard();
 }
 
 static void onquitbutton(GtkWidget *widget, void *data)
@@ -835,10 +875,9 @@ static GtkWidget *wintoolbar(int screen_width, int screen_height)
         wintoolbutton(kindleTr("Quit"), width, height, GTK_SIGNAL_FUNC(onquitbutton)),
         FALSE, FALSE, 0);
 
-    if (!gli_conf_fullscreen)
-        gtk_box_pack_end(GTK_BOX(toolbar),
-            wintoolbutton(kindleTr("Keyboard"), width, height, GTK_SIGNAL_FUNC(onkeyboardbutton)),
-            FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(toolbar),
+        wintoolbutton(kindleTr("Keyboard"), width, height, GTK_SIGNAL_FUNC(onkeyboardbutton)),
+        FALSE, FALSE, 0);
 
     return toolbar;
 }
@@ -855,9 +894,7 @@ void winopen(void)
     if ((env = getenv("GARGOYLE_FULLSCREEN")) != NULL)
         gli_conf_fullscreen = atoi(env);
 
-    int win_height = screen_height;
-    if (!gli_conf_fullscreen)
-        win_height -= screen_height / KBFACTOR;
+    int win_height = winheight();
 
     geom.min_width  = screen_width;
     geom.min_height = win_height;
@@ -889,9 +926,8 @@ void winopen(void)
     gtk_signal_connect(GTK_OBJECT(frame), "motion_notify_event",
         GTK_SIGNAL_FUNC(onmotion), NULL);
 
-    if (!gli_conf_fullscreen)
-        gtk_signal_connect_after(GTK_OBJECT(frame), "focus_in_event",
-                           GTK_SIGNAL_FUNC(openVirtualKeyboard), NULL);
+    gtk_signal_connect_after(GTK_OBJECT(frame), "focus_in_event",
+                       GTK_SIGNAL_FUNC(openVirtualKeyboard), NULL);
 
     canvas = gtk_drawing_area_new();
     gtk_signal_connect(GTK_OBJECT(canvas), "size_allocate",
