@@ -90,26 +90,15 @@ struct Interpreter {
     std::vector<std::string> flags;
 };
 
+class BlorbError : public std::runtime_error {
+public:
+    explicit BlorbError(const std::string &msg) : std::runtime_error(msg) {
+    }
+};
+
 }
 
-enum class Format {
-    Adrift,
-    Adrift5,
-    AdvSys,
-    AGT,
-    Alan2,
-    Alan3,
-    Glulx,
-    Hugo,
-    JACL,
-    Level9,
-    Magnetic,
-    Plus,
-    Scott,
-    TADS,
-    Taylor,
-    ZCode,
-};
+using garglk::Format;
 
 static std::optional<Format> probe(const std::array<char, 32> &header)
 {
@@ -216,68 +205,68 @@ static bool call_winterp(Format format, const std::string &game)
     }
 }
 
+// The format of the story file in a Blorb.
+static Format blorb_format(const std::string &game)
+{
+    giblorb_result_t res;
+    giblorb_map_t *basemap;
+
+    auto file = garglk::unique(glkunix_stream_open_pathname(const_cast<char *>(game.c_str()), 0, 0), [](strid_t file) {
+        glk_stream_close(file, nullptr);
+    });
+    if (!file) {
+        throw BlorbError("Unable to open file");
+    }
+
+    if (giblorb_create_map(file.get(), &basemap) != giblorb_err_None) {
+        throw BlorbError("Does not appear to be a valid Blorb file");
+    }
+
+    auto map = garglk::unique(basemap, giblorb_destroy_map);
+
+    if (giblorb_load_resource(map.get(), giblorb_method_FilePos, &res, giblorb_ID_Exec, 0) != giblorb_err_None) {
+        throw BlorbError("Does not contain a story file (look for a corresponding game file to load instead)");
+    }
+
+    if (res.chunktype == ID_ZCOD) {
+        return Format::ZCode;
+    } else if (res.chunktype == ID_GLUL) {
+        return Format::Glulx;
+    } else if (res.chunktype == ID_ADRI) {
+        if (res.length < 9) {
+            throw BlorbError("Truncated Adrift story file");
+        }
+
+        glk_stream_set_position(file.get(), res.data.startpos + 8, seekmode_Start);
+
+        unsigned char version;
+        if (glk_get_buffer_stream(file.get(), reinterpret_cast<char *>(&version), 1) != 1) {
+            throw BlorbError("Unable to read Adrift version");
+        }
+
+        if (version == 0x92) {
+            return Format::Adrift5;
+        } else if (version == 0x93 || version == 0x94) {
+            return Format::Adrift;
+        }
+
+        throw BlorbError(Format("Unknown Adrift version: {:#04x}", version));
+    }
+
+    std::string name;
+    auto val = [](unsigned char c) -> char {
+        return std::isprint(c) ? c : '?';
+    };
+    auto ck = res.chunktype;
+
+    auto msg = Format("Unknown game type: {:#08x} ({}{}{}{})", ck, val(ck >> 24), val(ck >> 16), val(ck >> 8), val(ck));
+    throw BlorbError(msg);
+}
+
 static bool runblorb(const std::string &game)
 {
-    class BlorbError : public std::runtime_error {
-    public:
-        explicit BlorbError(const std::string &msg) : std::runtime_error(msg) {
-        }
-    };
-
     try {
-        giblorb_result_t res;
-        giblorb_map_t *basemap;
-
-        auto file = garglk::unique(glkunix_stream_open_pathname(const_cast<char *>(game.c_str()), 0, 0), [](strid_t file) {
-            glk_stream_close(file, nullptr);
-        });
-        if (!file) {
-            throw BlorbError("Unable to open file");
-        }
-
-        if (giblorb_create_map(file.get(), &basemap) != giblorb_err_None) {
-            throw BlorbError("Does not appear to be a valid Blorb file");
-        }
-
-        auto map = garglk::unique(basemap, giblorb_destroy_map);
-
-        if (giblorb_load_resource(map.get(), giblorb_method_FilePos, &res, giblorb_ID_Exec, 0) != giblorb_err_None) {
-            throw BlorbError("Does not contain a story file (look for a corresponding game file to load instead)");
-        }
-
-        if (res.chunktype == ID_ZCOD) {
-            return call_winterp(Format::ZCode, game);
-        } else if (res.chunktype == ID_GLUL) {
-            return call_winterp(Format::Glulx, game);
-        } else if (res.chunktype == ID_ADRI) {
-            if (res.length < 9) {
-                throw BlorbError("Truncated Adrift story file");
-            }
-
-            glk_stream_set_position(file.get(), res.data.startpos + 8, seekmode_Start);
-
-            unsigned char version;
-            if (glk_get_buffer_stream(file.get(), reinterpret_cast<char *>(&version), 1) != 1) {
-                throw BlorbError("Unable to read Adrift version");
-            }
-
-            if (version == 0x92) {
-                return call_winterp(Format::Adrift5, game);
-            } else if (version == 0x93 || version == 0x94) {
-                return call_winterp(Format::Adrift, game);
-            }
-
-            throw BlorbError(Format("Unknown Adrift version: {:#04x}", version));
-        }
-
-        std::string name;
-        auto val = [](unsigned char c) -> char {
-            return std::isprint(c) ? c : '?';
-        };
-        auto ck = res.chunktype;
-
-        auto msg = Format("Unknown game type: {:#08x} ({}{}{}{})", ck, val(ck >> 24), val(ck >> 16), val(ck >> 8), val(ck));
-        throw BlorbError(msg);
+        return call_winterp(blorb_format(game), game);
     } catch (const BlorbError &e) {
         garglk::winmsg(Format("Could not load Blorb file {}:\n{}", game, e.what()));
         return false;
@@ -333,6 +322,26 @@ static std::optional<Interpreter> configterp(const std::string &gamepath)
     return std::nullopt;
 }
 
+static bool is_blorb(const std::array<char, 32> &header)
+{
+    return std::regex_search(header.begin(), header.end(), std::regex(R"(^FORM[\s\S]{4}IFRSRIdx)"));
+}
+
+static std::optional<Format> extension_format(const std::string &game)
+{
+    auto dot = game.rfind('.');
+    if (dot == std::string::npos) {
+        return std::nullopt;
+    }
+
+    auto format = extensions.find(garglk::downcase(game.substr(dot + 1)));
+    if (format == extensions.end()) {
+        return std::nullopt;
+    }
+
+    return format->second;
+}
+
 bool garglk::rungame(const std::string &game)
 {
     std::array<char, 32> header;
@@ -349,8 +358,7 @@ bool garglk::rungame(const std::string &game)
     }
 
     if (f.read(header.data(), header.size())) {
-        auto is_blorb = std::regex_search(header.begin(), header.end(), std::regex(R"(^FORM[\s\S]{4}IFRSRIdx)"));
-        if (is_blorb) {
+        if (is_blorb(header)) {
             return runblorb(game);
         }
 
@@ -360,17 +368,34 @@ bool garglk::rungame(const std::string &game)
         }
     }
 
-    std::string ext = "";
-    auto dot = game.rfind('.');
-    if (dot != std::string::npos) {
-        ext = garglk::downcase(game.substr(dot + 1));
+    auto format = extension_format(game);
+    if (format.has_value()) {
+        return call_winterp(*format, game);
     }
 
-    try {
-        return call_winterp(extensions.at(ext), game);
-    } catch (const std::out_of_range &) {
-        garglk::winmsg("Unknown file type");
-    }
-
+    garglk::winmsg("Unknown file type");
     return false;
+}
+
+std::optional<Format> garglk::identify(const std::string &game)
+{
+    std::array<char, 32> header;
+    std::ifstream f(game, std::ios::binary);
+
+    if (f.read(header.data(), header.size())) {
+        if (is_blorb(header)) {
+            try {
+                return blorb_format(game);
+            } catch (const BlorbError &) {
+                return std::nullopt;
+            }
+        }
+
+        auto format = probe(header);
+        if (format.has_value()) {
+            return format;
+        }
+    }
+
+    return extension_format(game);
 }

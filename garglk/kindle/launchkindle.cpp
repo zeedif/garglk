@@ -17,8 +17,11 @@
 // along with Gargoyle; if not, write to the Free Software
 // Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
+#include <cctype>
 #include <cstdlib>
+#include <fstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <unistd.h>
@@ -51,6 +54,46 @@ bool garglk::winterp(const std::string &exe, const std::vector<std::string> &fla
     return false;
 }
 
+// The platform named on the icon of a game in the game list.
+static std::optional<std::string> platform(const std::string &path)
+{
+    static const std::unordered_map<garglk::Format, const char *> names = {
+        {garglk::Format::Adrift, "ADRIFT"},
+        {garglk::Format::Adrift5, "ADRIFT"},
+        {garglk::Format::AdvSys, "ADVSYS"},
+        {garglk::Format::AGT, "AGT"},
+        {garglk::Format::Alan2, "ALAN"},
+        {garglk::Format::Alan3, "ALAN"},
+        {garglk::Format::Glulx, "GLULX"},
+        {garglk::Format::Hugo, "HUGO"},
+        {garglk::Format::JACL, "JACL"},
+        {garglk::Format::Level9, "LEVEL 9"},
+        {garglk::Format::Magnetic, "MAGNETIC"},
+        {garglk::Format::Plus, "PLUS"},
+        {garglk::Format::Scott, "SCOTT"},
+        {garglk::Format::TADS, "TADS"},
+        {garglk::Format::Taylor, "TAYLOR"},
+        {garglk::Format::ZCode, "Z-CODE"},
+    };
+    auto format = garglk::identify(path);
+
+    if (!format.has_value()) {
+        return std::nullopt;
+    }
+
+    // Scott Adams games are only told by their extension, which other data
+    // files share, so they must also look like one: text starting with a number.
+    if (*format == garglk::Format::Scott) {
+        std::ifstream file(path);
+        char first = '\0';
+        if (!(file >> first) || !(std::isdigit(static_cast<unsigned char>(first)) || first == '-')) {
+            return std::nullopt;
+        }
+    }
+
+    return names.at(*format);
+}
+
 int main(int argc, char **argv)
 {
     gtk_init(&argc, &argv);
@@ -63,7 +106,7 @@ int main(int argc, char **argv)
 
     // rungame only returns when the game could not be started.
     const char *games = std::getenv("GAMES");
-    while (auto game = kindle::browse(kindle::Browse::Game, games != nullptr ? games : g_get_home_dir())) {
+    while (auto game = kindle::browse(kindle::Browse::Game, games != nullptr ? games : g_get_home_dir(), "", std::nullopt, platform)) {
         garglk::rungame(*game);
     }
 

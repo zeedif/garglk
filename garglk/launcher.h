@@ -27,9 +27,32 @@
 
 namespace garglk {
 
+enum class Format {
+    Adrift,
+    Adrift5,
+    AdvSys,
+    AGT,
+    Alan2,
+    Alan3,
+    Glulx,
+    Hugo,
+    JACL,
+    Level9,
+    Magnetic,
+    Plus,
+    Scott,
+    TADS,
+    Taylor,
+    ZCode,
+};
+
 void winmsg(const std::string &msg);
 bool winterp(const std::string &exe, const std::vector<std::string> &flags, const std::string &game);
 bool rungame(const std::string &game);
+
+// The format of a game, from its contents or else its extension, without
+// running it.
+std::optional<Format> identify(const std::string &game);
 
 }
 
