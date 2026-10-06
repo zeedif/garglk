@@ -19,6 +19,8 @@ mkdir -p "${APP}/games" "${APP}/saved_games" "${STAGE}/documents"
 cp -R "${TOP}/build/dist" "${APP}/dist"
 cp "${KINDLE}/gtkrc" "${APP}/dist/"
 cp "${KINDLE}/gargoyle.sh" "${KINDLE}/menu.json" "${KINDLE}/config.xml" "${KINDLE}/gargoyle.png" "${APP}/"
+mkdir -p "${APP}/config/bocfel"
+cp "${KINDLE}/bocfelrc" "${APP}/config/bocfel/"
 
 # Go strips the downloader itself.
 if [ -x "${STRIP}" ]; then
