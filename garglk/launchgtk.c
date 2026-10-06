@@ -87,7 +87,7 @@ void winmsg(const char * msg)
     );
 
 #ifdef _KINDLE
-    gtk_window_set_title(GTK_WINDOW(msgDlg), KTITLE);
+    gtk_window_set_title(GTK_WINDOW(msgDlg), KDIALOG);
 #else
     gtk_window_set_title(GTK_WINDOW(msgDlg), AppName);
 #endif
@@ -336,25 +336,29 @@ int main(int argc, char **argv)
     winpath(dir);
 
     /* get story file */
-    if (!winargs(argc, argv, buf)) {
-        
-        /* For testing GTK settings... */
-        /*
-        gint doubleClickTime = 0;
-        g_object_get(gtk_settings_get_default(), "gtk-double-click-time", &doubleClickTime, NULL);
-        
-        gint doubleClickDistance = 0;
-        g_object_get(gtk_settings_get_default(), "gtk-double-click-distance", &doubleClickDistance, NULL);
-        
-        fwprintf(stderr, L"launchgtk.c: Double click time: %d\n", doubleClickTime);
-        fwprintf(stderr, L"launchgtk.c: Double click distance: %d\n", doubleClickDistance);
-        */
+    if (winargs(argc, argv, buf))
+        return rungame(dir, buf);
+
+    /* For testing GTK settings... */
+    /*
+    gint doubleClickTime = 0;
+    g_object_get(gtk_settings_get_default(), "gtk-double-click-time", &doubleClickTime, NULL);
+
+    gint doubleClickDistance = 0;
+    g_object_get(gtk_settings_get_default(), "gtk-double-click-distance", &doubleClickDistance, NULL);
+
+    fwprintf(stderr, L"launchgtk.c: Double click time: %d\n", doubleClickTime);
+    fwprintf(stderr, L"launchgtk.c: Double click distance: %d\n", doubleClickDistance);
+    */
+
+    /* rungame only returns when the game could not be started */
+    for (;;)
+    {
         winbrowsefile(buf, sizeof(buf));
+
+        if (!strlen(buf))
+            return TRUE;
+
+        rungame(dir, buf);
     }
-
-    if (!strlen(buf))
-        return TRUE;
-
-    /* run story file */
-    return rungame(dir, buf);
 }
