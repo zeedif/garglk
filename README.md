@@ -20,6 +20,11 @@ License.
 
 Gargoyle can be downloaded from the [releases page](https://github.com/garglk/garglk/releases).
 
+## Kindle
+
+Gargoyle also runs on jailbroken Kindles, with an interface made for e-ink and
+touch; see [support/kindle](support/kindle/README.md).
+
 ## Typography in interactive fiction
 
 Gargoyle cares about typography! In this computer age of typographical poverty,
