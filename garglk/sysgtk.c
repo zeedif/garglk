@@ -645,16 +645,14 @@ static void onmotion(GtkWidget *widget, GdkEventMotion *event, void *data)
 
 static void oninput(GtkIMContext *context, gchar *input, void *data)
 {
-    glui32 inlen;
-    glui32 keybuf[1];
+    glui32 keybuf[64];
+    glui32 keylen;
+    glui32 i;
 
-    keybuf[0] = '?';
+    keylen = gli_parse_utf8((unsigned char *)input, strlen(input), keybuf, 64);
 
-    inlen = strlen(input);
-    if(inlen)
-        gli_parse_utf8(input, inlen, keybuf, 1);
-
-    gli_input_handle_key(keybuf[0]);
+    for (i = 0; i < keylen; i++)
+        gli_input_handle_key(keybuf[i]);
 }
 
 static void onkeydown(GtkWidget *widget, GdkEventKey *event, void *data)
@@ -715,8 +713,13 @@ static void onkeydown(GtkWidget *widget, GdkEventKey *event, void *data)
             case GDK_F11: gli_input_handle_key(keycode_Func11); break;
             case GDK_F12: gli_input_handle_key(keycode_Func12); break;
             default:
-                if (key >= 32 && key <= 255)
-                    gli_input_handle_key(key);
+            {
+                /* keys the input method did not commit, including
+                   non-Latin-1 layouts such as Cyrillic */
+                gunichar ch = gdk_keyval_to_unicode(key);
+                if (ch >= 32)
+                    gli_input_handle_key(ch);
+            }
         }
 
     }
