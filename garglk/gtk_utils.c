@@ -36,7 +36,11 @@
 #include <unistd.h>
 
 #ifdef _KINDLE
+#if __has_include(<openlipc.h>)
 #include <openlipc.h>
+#else
+#include <lipc.h>
+#endif
 #endif /* _KINDLE */
 
 GString * normalizeFilename(GString * filename) 
