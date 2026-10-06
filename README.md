@@ -11,6 +11,7 @@ Changes to upstream gargoyle (https://github.com/garglk/garglk):
  * Keyboard icon: show or hide the on-screen keyboard; while it is hidden the game uses the whole screen, which suits external keyboards
  * Menu: save or restore the game (types the standard `save` and `restore` commands), go back to the game list, quit
 * Game list, save and restore dialogs: one paged list with folders first, the path next to an up button and the selected file framed. Tap a folder to open it, tap a file to select it and tap it again to open it; swipe to turn pages
+* Download games button in the game list: searches and downloads games from [IFDB](https://ifdb.org) with [ifdb-dl](https://github.com/dfghjkjhgr/ifdb-dl), which runs in [kTerm](https://github.com/bfabiszewski/kterm)
 * Supported in-game touch screen gestures:
  * One finger single tap on input line: place cursor
  * One finger double tap on word in input line: place cursor after tapped word
