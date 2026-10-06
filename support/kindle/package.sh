@@ -26,7 +26,7 @@ fi
 
 cp "${TOP}/support/kindle/garglk.ini" "${TOP}/support/kindle/gtkrc" "${APP}/dist/"
 cp "${TOP}/assets/kual/gargoyle.sh" "${TOP}/assets/kual/menu.json" "${TOP}/assets/kual/config.xml" "${APP}/"
-cp "${TOP}/assets/booklet/cover.png" "${APP}/gargoyle.png"
+cp "${TOP}/assets/booklet/splash.png" "${APP}/gargoyle.png"
 
 if command -v go >/dev/null 2>&1 && [ -f "${TOP}/ifdb-dl/main.go" ]; then
     (cd "${TOP}/ifdb-dl" && CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 \
