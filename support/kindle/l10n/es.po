@@ -50,3 +50,13 @@ msgstr "«%s» ya existe. ¿Quieres reemplazarlo?"
 
 msgid "This folder is empty"
 msgstr "Esta carpeta está vacía"
+
+msgid "Download games"
+msgstr "Descargar juegos"
+
+msgid ""
+"The game downloader needs kTerm.\n"
+"Install it with ;kpm install kterm"
+msgstr ""
+"El descargador de juegos necesita kTerm.\n"
+"Instálalo con ;kpm install kterm"
