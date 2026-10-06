@@ -32,6 +32,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 #include <unistd.h>
 
 /* For debuging segfaults */
@@ -47,8 +48,8 @@
 #include "gtk_utils.h"
 
 #ifdef _KINDLE
+#include "kindle_browser.h"
 #include "kindle_l10n.h"
-#include "kindle_ui.h"
 #endif
 
 static GtkWidget *frame;
@@ -63,7 +64,6 @@ static bool previousButtonEventWasScrollEvent = false;
 #endif
 
 #define MaxBuffer 1024
-static GtkWidget * fileRequestorDialog = NULL;
 static int fileselect = 0;
 static char filepath[MaxBuffer];
 
@@ -112,10 +112,6 @@ void glk_request_timer_events(glui32 millisecs)
 
 void winabort(const char *fmt, ...)
 {
-    if (fileRequestorDialog != NULL) 
-    {
-        gtk_widget_destroy(fileRequestorDialog);
-    }
 #ifdef _KINDLE
     closeLipcInstance();
 #endif
@@ -133,10 +129,6 @@ void winabort(const char *fmt, ...)
 
 void winexit(void)
 {
-    if (fileRequestorDialog != NULL) 
-    {
-        gtk_widget_destroy(fileRequestorDialog);
-    }
 #ifdef _KINDLE
     closeLipcInstance();
 #endif
@@ -146,85 +138,27 @@ void winexit(void)
 #ifdef _KINDLE
 static void winchoosefile(char *prompt, char *buffer, int bufferSize, int filter, GtkFileChooserAction action, const char *button)
 {
-    assert(buffer != NULL && bufferSize > 1);
-    buffer[0] = '\0';
-    
-    if (fileRequestorDialog == NULL) 
+    const char *saves = getenv("SAVED_GAMES") ? getenv("SAVED_GAMES") : getenv("HOME");
+    char *suggestion = NULL;
+
+    if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
     {
-        GString * fileRequestorInitFilename = 
-            createAndInitFilenameFromOsEnvironmentVariable("SAVED_GAMES", "HOME");
-        if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-        {
-            g_string_append_printf(fileRequestorInitFilename, "01_Untitled%s", winfilterpatterns[filter]+1);         
-        }
-        
-        fileRequestorDialog = createAndInitKindleFileRequestor(
-                fileRequestorInitFilename,
-                GTK_SORT_ASCENDING,
-                GTK_SORT_DESCENDING);
-        g_string_free(fileRequestorInitFilename, TRUE);
+        char *story = g_strdup(strlen(gli_story_name) ? gli_story_name : "game");
+        char stamp[32];
+        time_t now = time(NULL);
+
+        if (strrchr(story, '.'))
+            *strrchr(story, '.') = 0;
+        strftime(stamp, sizeof stamp, "%Y%m%d-%H%M", localtime(&now));
+        suggestion = g_strdup_printf("%s-%s%s", story, stamp, winfilterpatterns[filter] + 1);
+        g_free(story);
     }
-    
-    const gchar * selectedFilename = NULL;
-    bool isFileSelected = false;
-    bool isDialogCanceled = false;
-    do {
-        gint response = gtk_dialog_run(GTK_DIALOG(fileRequestorDialog));
-        selectedFilename = gtk_file_selection_get_filename(GTK_FILE_SELECTION(fileRequestorDialog));
-        
-        if (response == GTK_RESPONSE_OK) 
-        {
-            if (action == GTK_FILE_CHOOSER_ACTION_OPEN) {
 
-                if (g_file_test(selectedFilename, G_FILE_TEST_IS_DIR)) 
-                {
-                    GString * normalizedDirectoryname = NULL;
+    if (!kindleBrowse(action == GTK_FILE_CHOOSER_ACTION_SAVE ? KINDLE_BROWSE_SAVE : KINDLE_BROWSE_RESTORE,
+                      saves, suggestion, NULL, NULL, NULL, buffer, bufferSize))
+        buffer[0] = 0;
 
-                    char * canonicalDirectoryname = realpath(selectedFilename, NULL);
-                    if (canonicalDirectoryname != NULL) {
-                        normalizedDirectoryname = g_string_new(canonicalDirectoryname);
-                        free(canonicalDirectoryname);
-                    }
-                    else {
-                        normalizedDirectoryname = g_string_new(selectedFilename);
-                    }
-                    normalizeFilename(normalizedDirectoryname);
-
-                    gtk_file_selection_set_filename(GTK_FILE_SELECTION(fileRequestorDialog), normalizedDirectoryname->str);
-                    g_string_free(normalizedDirectoryname, TRUE);
-                }
-                else if (!g_file_test(selectedFilename, G_FILE_TEST_EXISTS ))  
-                {
-                    gchar * filenamePattern = g_path_get_basename(selectedFilename);
-
-                    gtk_file_selection_set_filename(GTK_FILE_SELECTION(fileRequestorDialog), selectedFilename);
-
-                    if (filenamePattern != NULL) 
-                    {
-                        gtk_file_selection_complete(GTK_FILE_SELECTION(fileRequestorDialog), filenamePattern);
-                        free(filenamePattern);
-                    }
-                }
-                else 
-                {
-                    g_strlcpy(buffer, selectedFilename, bufferSize);
-                    isFileSelected = true;
-                }
-            }
-            else /* if (action == GTK_FILE_CHOOSER_ACTION_SAVE) */
-            {   
-                g_strlcpy(buffer, selectedFilename, bufferSize);
-                isFileSelected = true;
-            }
-        }
-        else 
-        {
-            isDialogCanceled = true;
-        }
-    } 
-    while (!isFileSelected && !isDialogCanceled);
- 
-    gtk_widget_hide(fileRequestorDialog);
+    g_free(suggestion);
 }
 
 #else /* Default implementation */
@@ -799,10 +733,6 @@ static void onkeyup(GtkWidget *widget, GdkEventKey *event, void *data)
 static void onquit(GtkWidget *widget, void *data)
 {
     /* forced exit by wm */
-    if (fileRequestorDialog != NULL) 
-    {
-        gtk_widget_destroy(fileRequestorDialog);
-    }
 #ifdef _KINDLE
     closeLipcInstance();
 #endif

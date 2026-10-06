@@ -29,3 +29,21 @@ msgstr ""
 
 msgid "Go back to the game list? You will lose all unsaved progress!"
 msgstr ""
+
+msgid "Open"
+msgstr ""
+
+msgid "Restore"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Replace"
+msgstr ""
+
+msgid "\"%s\" already exists. Do you want to replace it?"
+msgstr ""
+
+msgid "This folder is empty"
+msgstr ""
