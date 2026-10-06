@@ -148,6 +148,14 @@ void openVirtualKeyboard(GtkWidget * widget, gpointer * callback_data) {
     }
 }
 
+void closeVirtualKeyboard(void) {
+    /* lipc-set-prop -s com.lab126.keyboard close net.fabiszewski.gargoyle */
+    if (lipcInstance == 0) {
+        openLipcInstance();
+    }
+    LipcSetStringProperty(lipcInstance, "com.lab126.keyboard", "close", "net.fabiszewski.gargoyle");
+}
+
 GtkWidget * createAndInitKindleFileRequestor(
         const GString * initFilename,
         const GtkSortType directoryListSortOrder,

@@ -5,6 +5,10 @@ https://www.mobileread.com/forums/showthread.php?t=366347
 
 Changes to upstream gargoyle (https://github.com/garglk/garglk):
 * Kindle port based on patches from: http://www.fabiszewski.net/kindle-gargoyle/
+* Toolbar on top of the game window:
+ * Keyboard: show or hide the on-screen keyboard; while it is hidden the game uses the whole screen, which suits external keyboards
+ * Quit: leave the game after a confirmation
+* The Kindle interface is translatable: catalogs are in support/kindle/l10n, copy gargoyle.pot to `<language>.po` to add a language
 * Supported in-game touch screen gestures:
  * One finger single tap on input line: place cursor
  * One finger double tap on word in input line: place cursor after tapped word
@@ -18,8 +22,7 @@ Changes to upstream gargoyle (https://github.com/garglk/garglk):
  * Two finger single tap on bottom-left side of the game screen: move cursor to the beginning of the word to the left
  * Two finger single tap on top-right side of the game screen: delete character right of cursor (= DEL key)
  * Two finger single tap on middle-right side of the game screen: delete characters right of cursor until first whitespace
- * Two finger single tap on bottom-right side of the game screen: **display keyboard** 
-    - *use this gesture if the keyboard disappears after opening a game file*
+ * Two finger single tap on bottom-right side of the game screen: **show or hide the keyboard**, like the toolbar button
  * Two finger single tap on top-center of the game screen: command history: previous (= key "cursor up")
  * Two finger single tap on bottom-center of the game screen: command history: next (= key "cursor down")
 
