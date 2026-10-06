@@ -26,6 +26,14 @@ Changes to upstream gargoyle (https://github.com/garglk/garglk):
 Kindle specific fullscreen layout & save/restore dialogs can be activated by defining: _KINDLE at compile time.<br/>
 Touch features/gestures can be activated by defining: _ALT_MOUSE_HANDLING at compile time.
 
+## Building for Kindle
+
+The Kindle build targets firmware 5.16.3 and later. It needs the `kindlehf` toolchain from [koxtoolchain](https://github.com/koreader/koxtoolchain) (built with `./gen-tc.sh kindlehf` or extracted from its prebuilt release into `~/x-tools`) with [kindle-sdk](https://github.com/KindleModding/kindle-sdk) installed on top of it (`./gen-sdk.sh kindlehf`). Then run:
+
+    support/kindle/build.sh
+
+The binaries are installed into `build-kindlehf/dist`.
+
 # Gargoyle [![Build Status](https://travis-ci.org/garglk/garglk.svg?branch=master)](https://travis-ci.org/garglk/garglk)
 
 ## An interactive fiction player
