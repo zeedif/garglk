@@ -32,8 +32,8 @@
 #include "gtk_utils.h"
 
 #ifdef _KINDLE
+#include "kindle_browser.h"
 #include "kindle_l10n.h"
-#include "kindle_ui.h"
 #endif
 
 #ifdef __FreeBSD__
@@ -167,75 +167,11 @@ static void winfilterfiles(GtkFileChooser *dialog)
 
 #ifdef _KINDLE
 static void winbrowsefile(char *buffer, int bufferSize)
-{   
-    assert(buffer != NULL && bufferSize > 1);
-    buffer[0] = '\0';
-    
-    GString * fileRequestorInitFilename = 
-            createAndInitFilenameFromOsEnvironmentVariable("GAMES", "HOME");
-    
-    GtkWidget * fileRequestorDialog = createAndInitKindleFileRequestor(
-                fileRequestorInitFilename,
-                GTK_SORT_ASCENDING,
-                GTK_SORT_ASCENDING);
-    g_string_free(fileRequestorInitFilename, TRUE);
-	gtk_widget_set_events(GTK_WIDGET(fileRequestorDialog), GDK_FOCUS_CHANGE_MASK);
-	
-    bool isFileSelected = false;
-    bool isDialogCanceled = false;
-    do {
-        gint response = gtk_dialog_run(GTK_DIALOG(fileRequestorDialog));
-        
-        if (response == GTK_RESPONSE_OK) 
-        {
-            const gchar * selectedFilename = gtk_file_selection_get_filename(GTK_FILE_SELECTION(fileRequestorDialog));
-            
-            if (g_file_test(selectedFilename, G_FILE_TEST_IS_DIR)) 
-            {
-                GString * normalizedDirectoryname = NULL;
-                
-                char * canonicalDirectoryname = realpath(selectedFilename, NULL);
-                if (canonicalDirectoryname != NULL) {
-                    normalizedDirectoryname = g_string_new(canonicalDirectoryname);
-                    free(canonicalDirectoryname);
-                }
-                else {
-                    normalizedDirectoryname = g_string_new(selectedFilename);
-                }
-                normalizeFilename(normalizedDirectoryname);
-                
-                gtk_file_selection_set_filename(GTK_FILE_SELECTION(fileRequestorDialog), normalizedDirectoryname->str);
-                g_string_free(normalizedDirectoryname, TRUE);
-            }
-            else if (!g_file_test(selectedFilename, G_FILE_TEST_EXISTS ))  
-            {
-                gchar * filenamePattern = g_path_get_basename(selectedFilename);
-                
-                gtk_file_selection_set_filename(GTK_FILE_SELECTION(fileRequestorDialog), selectedFilename);
-                
-                if (filenamePattern != NULL) 
-                {
-                    gtk_file_selection_complete(GTK_FILE_SELECTION(fileRequestorDialog), filenamePattern);
-                    free(filenamePattern);
-                }
-            }
-            else 
-            {
-                g_strlcpy(buffer, selectedFilename, bufferSize);
-                isFileSelected = true;
-            }
-        }
-        else 
-        {
-            isDialogCanceled = true;
-        }
-    } 
-    while (!isFileSelected && !isDialogCanceled);
+{
+    const char * games = getenv("GAMES") ? getenv("GAMES") : getenv("HOME");
 
-    gtk_widget_destroy(fileRequestorDialog);
-#ifdef _KINDLE
-    //closeLipcInstance();
-#endif
+    if (!kindleBrowse(KINDLE_BROWSE_GAME, games, NULL, NULL, NULL, NULL, buffer, bufferSize))
+        buffer[0] = '\0';
 }
 
 #else /* Default implementation */
